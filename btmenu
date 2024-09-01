@@ -61,6 +61,30 @@ execute_mode() {
     [[ $name ]] || return
     mac=${DEVICES["$name"]}
 
+
+    # Check if the device is already connected
+    if printf 'info %s\n' "$mac" | _bluetoothctl | grep -Pq '^[\t ]+Connected: yes'; then
+        # Prompt to disconnect if already connected
+        if echo -e "yes\nno" | dmenu -p "$name is already connected. Disconnect?" | grep -q "^yes$"; then
+            mode=disconnect
+        else
+            notify "Cancelled disconnecting from $name"
+            return 0
+        fi
+    fi
+
+    case $mode in
+        connect)
+            preposition=to
+            expected_to_connect=yes
+        ;;
+        disconnect)
+            preposition=from
+            expected_to_connect=no
+        ;;
+    esac
+
+
     notify "Attempting to $mode $preposition $name"
 
     while (( retries-- )); do
